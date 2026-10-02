@@ -43,12 +43,16 @@ extension PriorityStyle on Priority {
 /// Entidad de dominio que representa una tarea.
 @immutable
 class Task {
+  // CAMBIO (Guía 5): se agrega un id único para poder completar / eliminar
+  // una tarea concreta sin depender de su posición en la lista.
+  final String id;
   final String title;
   final String meta; // p. ej. "Hoy · Universidad"
   final Priority priority;
   final bool done;
 
   const Task({
+    required this.id,
     required this.title,
     required this.meta,
     required this.priority,
@@ -56,12 +60,14 @@ class Task {
   });
 
   Task copyWith({
+    String? id,
     String? title,
     String? meta,
     Priority? priority,
     bool? done,
   }) {
     return Task(
+      id: id ?? this.id,
       title: title ?? this.title,
       meta: meta ?? this.meta,
       priority: priority ?? this.priority,

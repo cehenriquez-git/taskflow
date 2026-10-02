@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/constants/app_dimensions.dart';
+import '../../../../core/theme/app_colors.dart';
 import '../../domain/task.dart';
+import '../providers/tasks_provider.dart';
+import '../widgets/add_task_dialog.dart';
 import '../widgets/app_bars.dart';
 import '../widgets/header_card.dart';
 import '../widgets/quote_card.dart';
@@ -10,45 +14,22 @@ import '../widgets/stat_card.dart';
 import '../widgets/task_card.dart';
 
 /// Pantalla «Resumen del día» de TaskFlow.
-class TaskflowPage extends StatefulWidget {
+///
+/// ANTES: StatefulWidget con `_tasks`, `_navIndex` y setState.
+/// AHORA: ConsumerWidget sin estado propio; lee providers con `ref.watch`.
+class TaskflowPage extends ConsumerWidget {
   const TaskflowPage({super.key});
 
   @override
-  State<TaskflowPage> createState() => _TaskflowPageState();
-}
+  Widget build(BuildContext context, WidgetRef ref) {
+    // watch => la pantalla se reconstruye sola cuando cambian estos valores.
+    final tasks = ref.watch(tasksProvider);
+    final total = ref.watch(totalTasksProvider);
+    final completed = ref.watch(completedTasksProvider);
+    final pending = ref.watch(pendingTasksProvider);
+    final progress = ref.watch(progressProvider);
+    final navIndex = ref.watch(navIndexProvider);
 
-class _TaskflowPageState extends State<TaskflowPage> {
-  int _navIndex = 0;
-
-  // Datos de ejemplo. En una app real vendrían de la capa data/domain.
-  final List<Task> _tasks = [
-    const Task(
-      title:
-          'Terminar el laboratorio de layouts y composición visual del curso',
-      meta: 'Hoy · Universidad',
-      priority: Priority.alta,
-    ),
-    const Task(
-      title: 'Revisar los pull requests',
-      meta: 'Hoy · Trabajo',
-      priority: Priority.media,
-      done: true,
-    ),
-    const Task(
-      title: 'Leer la documentación',
-      meta: 'Mañana · Aprendizaje',
-      priority: Priority.baja,
-    ),
-  ];
-
-  void _toggle(int index) {
-    setState(() {
-      _tasks[index] = _tasks[index].copyWith(done: !_tasks[index].done);
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
     return Scaffold(
       body: SafeArea(
         bottom: false,
@@ -62,15 +43,16 @@ class _TaskflowPageState extends State<TaskflowPage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const SizedBox(height: 8),
-                    const HeaderCard(
+                    HeaderCard(
                       greeting: 'Buenos días, Cristian',
                       date: 'Viernes 28 de agosto',
-                      subtitle: '3 tareas pendientes para hoy',
-                      progress: 0.60,
+                      subtitle:
+                          '$pending ${pending == 1 ? 'tarea pendiente' : 'tareas pendientes'} para hoy',
+                      progress: progress,
                     ),
                     // Aire por la insignia superpuesta (ø76 / 2 + margen).
                     const SizedBox(height: 46),
-                    _buildStatsRow(),
+                    _buildStatsRow(total: total, completed: completed),
                     const SizedBox(height: 24),
                     SectionHeader(
                       title: 'Tareas de hoy',
@@ -78,7 +60,7 @@ class _TaskflowPageState extends State<TaskflowPage> {
                       onAction: () {},
                     ),
                     const SizedBox(height: AppDimensions.gap),
-                    ..._buildTaskList(),
+                    ..._buildTaskList(ref, tasks),
                     const SizedBox(height: AppDimensions.gap),
                     const QuoteCard(
                       quote: 'La disciplina es el puente entre las metas y los logros que realmente importan.',
@@ -91,9 +73,19 @@ class _TaskflowPageState extends State<TaskflowPage> {
           ],
         ),
       ),
+      floatingActionButton: FloatingActionButton(
+        backgroundColor: AppColors.primaryDark,
+        foregroundColor: AppColors.white,
+        onPressed: () => showDialog<void>(
+          context: context,
+          builder: (_) => const AddTaskDialog(),
+        ),
+        child: const Icon(Icons.add),
+      ),
       bottomNavigationBar: BottomBar(
-        currentIndex: _navIndex,
-        onTap: (i) => setState(() => _navIndex = i),
+        currentIndex: navIndex,
+        // read => dentro de un callback solo se ejecuta una acción.
+        onTap: (i) => ref.read(navIndexProvider.notifier).select(i),
         destinations: const [
           BottomDestination(icon: Icons.list_alt, label: 'Tareas'),
           BottomDestination(icon: Icons.water_drop_outlined, label: 'Hábitos'),
@@ -103,20 +95,21 @@ class _TaskflowPageState extends State<TaskflowPage> {
     );
   }
 
-  Widget _buildStatsRow() {
-    return const Padding(
-      padding: EdgeInsets.symmetric(horizontal: AppDimensions.margin),
+  Widget _buildStatsRow({required int total, required int completed}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: AppDimensions.margin),
       child: Row(
         children: [
           Expanded(
-            child: StatCard(value: '12', label: 'Tareas'),
+            child: StatCard(value: '$total', label: 'Tareas'),
           ),
-          SizedBox(width: AppDimensions.gap),
+          const SizedBox(width: AppDimensions.gap),
           Expanded(
-            child: StatCard(value: '7', label: 'Completadas'),
+            child: StatCard(value: '$completed', label: 'Completadas'),
           ),
-          SizedBox(width: AppDimensions.gap),
-          Expanded(
+          const SizedBox(width: AppDimensions.gap),
+          // La racha aún no tiene lógica; se mantiene fija.
+          const Expanded(
             child: StatCard(value: '5', label: 'Racha semanal'),
           ),
         ],
@@ -124,15 +117,45 @@ class _TaskflowPageState extends State<TaskflowPage> {
     );
   }
 
-  List<Widget> _buildTaskList() {
-    return List.generate(_tasks.length, (i) {
+  List<Widget> _buildTaskList(WidgetRef ref, List<Task> tasks) {
+    if (tasks.isEmpty) {
+      return const [
+        Padding(
+          padding: EdgeInsets.symmetric(horizontal: AppDimensions.margin),
+          child: Text(
+            'No tienes tareas. Toca + para agregar una.',
+            style: TextStyle(color: AppColors.textMuted),
+          ),
+        ),
+      ];
+    }
+
+    final notifier = ref.read(tasksProvider.notifier);
+
+    return List.generate(tasks.length, (i) {
+      final task = tasks[i];
       return Padding(
         padding: EdgeInsets.only(
           left: AppDimensions.margin,
           right: AppDimensions.margin,
-          bottom: i == _tasks.length - 1 ? 0 : AppDimensions.gap,
+          bottom: i == tasks.length - 1 ? 0 : AppDimensions.gap,
         ),
-        child: TaskCard(task: _tasks[i], onToggle: () => _toggle(i)),
+        // Deslizar hacia la izquierda elimina la tarea.
+        child: Dismissible(
+          key: ValueKey(task.id),
+          direction: DismissDirection.endToStart,
+          onDismissed: (_) => notifier.remove(task.id),
+          background: Container(
+            alignment: Alignment.centerRight,
+            padding: const EdgeInsets.only(right: 20),
+            decoration: BoxDecoration(
+              color: Colors.red.shade400,
+              borderRadius: BorderRadius.circular(AppDimensions.taskCardRadius),
+            ),
+            child: const Icon(Icons.delete_outline, color: AppColors.white),
+          ),
+          child: TaskCard(task: task, onToggle: () => notifier.toggle(task.id)),
+        ),
       );
     });
   }
