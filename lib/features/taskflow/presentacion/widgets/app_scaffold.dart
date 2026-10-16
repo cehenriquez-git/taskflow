@@ -5,11 +5,13 @@ import 'app_bars.dart';
 
 /// Estructura común de las tres pantallas principales:
 /// TopBar + contenido + BottomBar con navegación por rutas.
+/// CAMBIO (Semana 14): [actions] se pasan a la TopBar.
 class AppScaffold extends StatelessWidget {
   final String title;
   final int currentIndex;
   final Widget body;
   final Widget? floatingActionButton;
+  final List<Widget> actions;
 
   const AppScaffold({
     super.key,
@@ -17,6 +19,7 @@ class AppScaffold extends StatelessWidget {
     required this.currentIndex,
     required this.body,
     this.floatingActionButton,
+    this.actions = const [],
   });
 
   static const _destinations = [
@@ -32,7 +35,7 @@ class AppScaffold extends StatelessWidget {
         bottom: false,
         child: Column(
           children: [
-            TopBar(title: title, avatarLetter: 'C'),
+            TopBar(title: title, avatarLetter: 'C', actions: actions),
             Expanded(child: body),
           ],
         ),

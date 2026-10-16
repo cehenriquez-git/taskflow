@@ -4,14 +4,18 @@ import '../../../../core/constants/app_dimensions.dart';
 import '../../../../core/theme/app_colors.dart';
 
 /// Barra superior: alto 56 · título 22 pt negrita · avatar ø36.
+/// CAMBIO (Semana 14): [actions] opcionales (p. ej. el ícono de la nube)
+/// que se muestran antes del avatar.
 class TopBar extends StatelessWidget {
   final String title;
   final String avatarLetter;
+  final List<Widget> actions;
 
   const TopBar({
     super.key,
     required this.title,
     required this.avatarLetter,
+    this.actions = const [],
   });
 
   @override
@@ -21,16 +25,21 @@ class TopBar extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: AppDimensions.margin),
         child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(
-              title,
-              style: const TextStyle(
-                fontSize: AppDimensions.titleSize,
-                fontWeight: FontWeight.bold,
-                color: AppColors.primaryDark,
+            Expanded(
+              child: Text(
+                title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontSize: AppDimensions.titleSize,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.primaryDark,
+                ),
               ),
             ),
+            ...actions,
+            const SizedBox(width: 8),
             Container(
               width: AppDimensions.avatarSize,
               height: AppDimensions.avatarSize,

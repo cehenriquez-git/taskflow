@@ -6,7 +6,6 @@ import '../../../../core/routes/app_routes.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../domain/task.dart';
 import '../providers/tasks_provider.dart';
-import '../widgets/add_task_dialog.dart';
 import '../widgets/app_scaffold.dart';
 import '../widgets/header_card.dart';
 import '../widgets/quote_card.dart';
@@ -17,6 +16,25 @@ import '../widgets/task_card.dart';
 /// Pantalla «Resumen del día» (ruta '/').
 class TaskflowPage extends ConsumerWidget {
   const TaskflowPage({super.key});
+
+  /// Abre el formulario y recibe la tarea creada (o null si el usuario
+  /// volvió sin guardar). Solo entonces la tarea entra a Riverpod.
+  Future<void> _abrirNuevaTarea(BuildContext context, WidgetRef ref) async {
+    final nueva =
+        await Navigator.of(context).pushNamed<Task>(AppRoutes.nuevaTarea);
+
+    // El usuario presionó "atrás" sin guardar: no hay nada que hacer.
+    if (nueva == null) return;
+
+    // ref.read (no watch): estamos dentro de un callback.
+    ref.read(tasksProvider.notifier).add(nueva);
+
+    // Safe-await: comprobar que el contexto siga montado antes de usarlo.
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Tarea "${nueva.title}" creada')),
+    );
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -29,17 +47,24 @@ class TaskflowPage extends ConsumerWidget {
     return AppScaffold(
       title: 'TaskFlow',
       currentIndex: 0,
-      floatingActionButton: FloatingActionButton(
+      // CAMBIO (Semana 14): acceso a «Tareas en la nube».
+      actions: [
+        IconButton(
+          tooltip: 'Tareas en la nube',
+          icon: const Icon(Icons.cloud, color: AppColors.primaryDark),
+          onPressed: () =>
+              Navigator.of(context).pushNamed(AppRoutes.tareasRemotas),
+        ),
+      ],
+      floatingActionButton: FloatingActionButton.extended(
         backgroundColor: AppColors.primaryDark,
         foregroundColor: AppColors.white,
-        onPressed: () => showDialog<void>(
-          context: context,
-          builder: (_) => const AddTaskDialog(),
-        ),
-        child: const Icon(Icons.add),
+        icon: const Icon(Icons.add),
+        label: const Text('Nueva tarea'),
+        onPressed: () => _abrirNuevaTarea(context, ref),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.only(bottom: 24),
+        padding: const EdgeInsets.only(bottom: 88), // espacio para el FAB extendido
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -98,7 +123,7 @@ class TaskflowPage extends ConsumerWidget {
         Padding(
           padding: EdgeInsets.symmetric(horizontal: AppDimensions.margin),
           child: Text(
-            'No tienes tareas. Toca + para agregar una.',
+            'No tienes tareas. Toca "Nueva tarea" para agregar una.',
             style: TextStyle(color: AppColors.textMuted),
           ),
         ),
@@ -128,7 +153,7 @@ class TaskflowPage extends ConsumerWidget {
             ),
             child: const Icon(Icons.delete_outline, color: AppColors.white),
           ),
-          // Tocar la tarjeta abre el detalle; se envía SOLO el id (opción B).
+          // Tocar la tarjeta abre el detalle; se envía SOLO el id.
           child: GestureDetector(
             behavior: HitTestBehavior.opaque,
             onTap: () => Navigator.of(context)

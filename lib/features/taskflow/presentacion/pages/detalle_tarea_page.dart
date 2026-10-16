@@ -2,13 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/constants/app_dimensions.dart';
+import '../../../../core/routes/app_routes.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../domain/task.dart';
 import '../providers/tasks_provider.dart';
 import '../widgets/priority_chip.dart';
 
 /// Detalle de tarea (ruta '/tarea'). Recibe solo el id y lee la tarea EN VIVO
-/// desde Riverpod con taskByIdProvider. Incluye modo edición (misma pantalla).
+/// desde Riverpod con taskByIdProvider.
+///
+/// CAMBIO (Formularios): la edición ya no es inline; reutiliza el formulario
+/// validado (NuevaTareaPage con `inicial`) y recibe la tarea editada con pop.
 class DetalleTareaPage extends ConsumerStatefulWidget {
   final String taskId;
 
@@ -19,39 +23,15 @@ class DetalleTareaPage extends ConsumerStatefulWidget {
 }
 
 class _DetalleTareaPageState extends ConsumerState<DetalleTareaPage> {
-  final _titleCtrl = TextEditingController();
-  final _metaCtrl = TextEditingController();
-  Priority _priority = Priority.media;
-  bool _editing = false;
   bool _deleted = false; // evita el parpadeo "no existe" al eliminar
 
-  @override
-  void dispose() {
-    _titleCtrl.dispose();
-    _metaCtrl.dispose();
-    super.dispose();
-  }
+  Future<void> _editar(Task task) async {
+    final editada = await Navigator.of(context)
+        .pushNamed<Task>(AppRoutes.nuevaTarea, arguments: task);
 
-  void _startEdit(Task task) {
-    _titleCtrl.text = task.title;
-    _metaCtrl.text = task.meta;
-    setState(() {
-      _priority = task.priority;
-      _editing = true;
-    });
-  }
-
-  void _save() {
-    final title = _titleCtrl.text.trim();
-    if (title.isEmpty) return;
-    final meta = _metaCtrl.text.trim();
-    ref.read(tasksProvider.notifier).update(
-          widget.taskId,
-          title: title,
-          meta: meta.isEmpty ? 'Hoy' : meta,
-          priority: _priority,
-        );
-    setState(() => _editing = false);
+    // Safe-await: el usuario pudo volver sin guardar (null) o cerrar la pantalla.
+    if (editada == null || !mounted) return;
+    ref.read(tasksProvider.notifier).update(editada);
   }
 
   void _delete() {
@@ -75,26 +55,20 @@ class _DetalleTareaPageState extends ConsumerState<DetalleTareaPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(_editing ? 'Editar tarea' : 'Detalle de tarea'),
+        title: const Text('Detalle de tarea'),
         backgroundColor: AppColors.surface,
         foregroundColor: AppColors.primaryDark,
         actions: [
-          if (_editing)
-            IconButton(
-              tooltip: 'Cancelar',
-              icon: const Icon(Icons.close),
-              onPressed: () => setState(() => _editing = false),
-            ),
           IconButton(
-            tooltip: _editing ? 'Guardar' : 'Editar',
-            icon: Icon(_editing ? Icons.check : Icons.edit_outlined),
-            onPressed: _editing ? _save : () => _startEdit(task),
+            tooltip: 'Editar',
+            icon: const Icon(Icons.edit_outlined),
+            onPressed: () => _editar(task),
           ),
         ],
       ),
       body: ListView(
         padding: const EdgeInsets.all(AppDimensions.margin),
-        children: _editing ? _buildEditor() : _buildView(task),
+        children: _buildView(task),
       ),
     );
   }
@@ -130,6 +104,26 @@ class _DetalleTareaPageState extends ConsumerState<DetalleTareaPage> {
           ),
         ],
       ),
+      if (task.description.isNotEmpty) ...[
+        const SizedBox(height: 16),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(AppDimensions.taskCardPadding),
+          decoration: BoxDecoration(
+            color: AppColors.white,
+            borderRadius: BorderRadius.circular(AppDimensions.taskCardRadius),
+            border: Border.all(color: AppColors.chipBg),
+          ),
+          child: Text(
+            task.description,
+            style: const TextStyle(
+              fontSize: 14,
+              height: 1.4,
+              color: AppColors.textDark,
+            ),
+          ),
+        ),
+      ],
       const SizedBox(height: 24),
       Container(
         decoration: BoxDecoration(
@@ -152,38 +146,6 @@ class _DetalleTareaPageState extends ConsumerState<DetalleTareaPage> {
         label: const Text('Eliminar tarea'),
         style: OutlinedButton.styleFrom(foregroundColor: Colors.red.shade600),
       ),
-    ];
-  }
-
-  List<Widget> _buildEditor() {
-    return [
-      TextField(
-        controller: _titleCtrl,
-        minLines: 1,
-        maxLines: 3,
-        decoration: const InputDecoration(labelText: 'Título'),
-      ),
-      const SizedBox(height: 12),
-      TextField(
-        controller: _metaCtrl,
-        decoration: const InputDecoration(
-          labelText: 'Detalle (ej. Hoy · Universidad)',
-        ),
-      ),
-      const SizedBox(height: 16),
-      Wrap(
-        spacing: 8,
-        children: [
-          for (final p in Priority.values)
-            ChoiceChip(
-              label: Text(p.label),
-              selected: _priority == p,
-              onSelected: (_) => setState(() => _priority = p),
-            ),
-        ],
-      ),
-      const SizedBox(height: 24),
-      FilledButton(onPressed: _save, child: const Text('Guardar cambios')),
     ];
   }
 }

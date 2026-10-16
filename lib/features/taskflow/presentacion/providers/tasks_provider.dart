@@ -1,44 +1,52 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/utils/validadores_tarea.dart';
 import '../../domain/task.dart';
 
 /// Notifier que centraliza TODO el estado de la lista de tareas.
+///
+/// Estado de la APP: aquí solo entran tareas ya validadas. Los borradores
+/// del formulario (texto en edición, foco, etc.) son estado efímero y viven
+/// en el State de la pantalla.
 class TasksNotifier extends Notifier<List<Task>> {
   @override
-  List<Task> build() => const [
-        Task(
-          id: '1',
-          title:
-              'Terminar el laboratorio de layouts y composición visual del curso',
-          meta: 'Hoy · Universidad',
-          priority: Priority.alta,
-        ),
-        Task(
-          id: '2',
-          title: 'Revisar los pull requests',
-          meta: 'Hoy · Trabajo',
-          priority: Priority.media,
-          done: true,
-        ),
-        Task(
-          id: '3',
-          title: 'Leer la documentación',
-          meta: 'Mañana · Aprendizaje',
-          priority: Priority.baja,
-        ),
-      ];
+  List<Task> build() {
+    final ahora = DateTime.now();
+    final hoy = DateTime(ahora.year, ahora.month, ahora.day);
+    final manana = DateTime(ahora.year, ahora.month, ahora.day + 1);
 
-  void add({
-    required String title,
-    required String meta,
-    required Priority priority,
-  }) {
-    final task = Task(
-      id: DateTime.now().microsecondsSinceEpoch.toString(),
-      title: title,
-      meta: meta,
-      priority: priority,
-    );
+    return [
+      Task(
+        id: '1',
+        title:
+            'Terminar el laboratorio de layouts y composición visual del curso',
+        dueDate: hoy,
+        category: 'Estudio',
+        priority: Priority.alta,
+      ),
+      Task(
+        id: '2',
+        title: 'Revisar los pull requests',
+        dueDate: hoy,
+        category: 'Trabajo',
+        priority: Priority.media,
+        done: true,
+      ),
+      Task(
+        id: '3',
+        title: 'Leer la documentación',
+        dueDate: manana,
+        category: 'Estudio',
+        priority: Priority.baja,
+      ),
+    ];
+  }
+
+  /// Recibe una tarea ya construida por el formulario.
+  void add(Task task) {
+    // Defensa en profundidad: aunque la UI ya validó, el gestor de estado
+    // no acepta datos inválidos de NINGÚN origen (API, almacenamiento, etc.).
+    if (!_esValida(task)) return;
     state = [...state, task];
   }
 
@@ -49,31 +57,28 @@ class TasksNotifier extends Notifier<List<Task>> {
     ];
   }
 
-  /// NUEVO: edición de una tarea (la usa el modo edición del detalle).
-  void update(
-    String id, {
-    String? title,
-    String? meta,
-    Priority? priority,
-  }) {
+  /// Reemplaza la tarea con el mismo id (la usa el modo edición).
+  void update(Task task) {
+    if (!_esValida(task)) return;
     state = [
       for (final t in state)
-        if (t.id == id)
-          t.copyWith(title: title, meta: meta, priority: priority)
-        else
-          t,
+        if (t.id == task.id) task else t,
     ];
   }
 
   void remove(String id) {
     state = state.where((t) => t.id != id).toList();
   }
+
+  bool _esValida(Task t) =>
+      ValidadoresTarea.titulo(t.title) == null &&
+      ValidadoresTarea.descripcion(t.description) == null;
 }
 
 final tasksProvider =
     NotifierProvider<TasksNotifier, List<Task>>(TasksNotifier.new);
 
-/// NUEVO: provider derivado parametrizado (Provider.family).
+/// Provider derivado parametrizado (Provider.family).
 /// El detalle lo observa por id, así que se actualiza en vivo si la tarea
 /// cambia desde cualquier lugar. Devuelve null si la tarea ya no existe.
 final taskByIdProvider = Provider.family<Task?, String>((ref, id) {
@@ -103,6 +108,3 @@ final progressProvider = Provider<double>((ref) {
   if (total == 0) return 0;
   return ref.watch(completedTasksProvider) / total;
 });
-
-// NOTA: se eliminó navIndexProvider. Ahora la ruta actual determina qué
-// pestaña está seleccionada (cada pantalla indica su propio currentIndex).
