@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'core/routes/app_router.dart';
+import 'core/routes/app_routes.dart';
 import 'core/theme/app_theme.dart';
-import 'features/taskflow/presentacion/pages/taskflow_page.dart';
 
-// CAMBIO (Guía 5): la app se envuelve en ProviderScope, que es el contenedor
-// donde viven todos los providers de Riverpod.
 void main() => runApp(const ProviderScope(child: TaskFlowApp()));
 
 class TaskFlowApp extends StatelessWidget {
@@ -13,11 +12,16 @@ class TaskFlowApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // CAMBIO (navegación): se elimina `home:` y se usa la tabla de rutas.
+    // (No pueden coexistir `home` y la ruta '/').
     return MaterialApp(
       title: 'TaskFlow',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light,
-      home: const TaskflowPage(),
+      initialRoute: AppRoutes.home,
+      routes: AppRouter.routes,
+      onGenerateRoute: AppRouter.onGenerateRoute,
+      onUnknownRoute: AppRouter.onUnknownRoute,
     );
   }
 }
