@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/constants/app_dimensions.dart';
+import '../../../../core/routes/app_routes.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../providers/tasks_provider.dart';
 import '../widgets/app_scaffold.dart';
@@ -66,6 +67,14 @@ class PerfilPage extends ConsumerWidget {
               const SizedBox(width: AppDimensions.gap),
               Expanded(child: StatCard(value: '$pending', label: 'Pendientes')),
             ],
+          ),
+          const SizedBox(height: 24),
+          // CAMBIO (Semana 14): acceso al laboratorio de asincronía.
+          OutlinedButton.icon(
+            onPressed: () =>
+                Navigator.of(context).pushNamed(AppRoutes.laboratorio),
+            icon: const Icon(Icons.science_outlined),
+            label: const Text('Laboratorio async'),
           ),
         ],
       ),

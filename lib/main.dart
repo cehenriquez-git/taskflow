@@ -5,6 +5,8 @@ import 'core/routes/app_router.dart';
 import 'core/routes/app_routes.dart';
 import 'core/theme/app_theme.dart';
 
+// ProviderScope está por encima de MaterialApp: el estado de sesión
+// (authProvider) sobrevive a cualquier navegación.
 void main() => runApp(const ProviderScope(child: TaskFlowApp()));
 
 class TaskFlowApp extends StatelessWidget {
@@ -12,13 +14,12 @@ class TaskFlowApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // CAMBIO (navegación): se elimina `home:` y se usa la tabla de rutas.
-    // (No pueden coexistir `home` y la ruta '/').
     return MaterialApp(
       title: 'TaskFlow',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light,
-      initialRoute: AppRoutes.home,
+      // CAMBIO (Semana 15): la app arranca en el Login.
+      initialRoute: AppRoutes.login,
       routes: AppRouter.routes,
       onGenerateRoute: AppRouter.onGenerateRoute,
       onUnknownRoute: AppRouter.onUnknownRoute,

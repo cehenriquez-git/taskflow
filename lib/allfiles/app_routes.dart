@@ -10,6 +10,8 @@ import 'package:flutter/material.dart';
 ///                     Task validada con Navigator.pop, o null si se cancela.
 ///   /habitos       -> Hábitos (rama independiente)
 ///   /perfil        -> Perfil (rama independiente)
+///   /nube          -> Tareas en la nube (API REST, Semana 14)
+///   /laboratorio   -> Laboratorio de asincronía (Semana 14)
 class AppRoutes {
   AppRoutes._();
 
@@ -18,6 +20,8 @@ class AppRoutes {
   static const perfil = '/perfil';
   static const tarea = '/tarea';
   static const nuevaTarea = '/tarea/nueva';
+  static const tareasRemotas = '/nube';
+  static const laboratorio = '/laboratorio';
 
   // Orden = destinos de la barra inferior (Tareas, Hábitos, Perfil).
   static const _tabs = [home, habitos, perfil];

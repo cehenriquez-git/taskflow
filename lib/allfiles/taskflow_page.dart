@@ -47,6 +47,15 @@ class TaskflowPage extends ConsumerWidget {
     return AppScaffold(
       title: 'TaskFlow',
       currentIndex: 0,
+      // CAMBIO (Semana 14): acceso a «Tareas en la nube».
+      actions: [
+        IconButton(
+          tooltip: 'Tareas en la nube',
+          icon: const Icon(Icons.cloud, color: AppColors.primaryDark),
+          onPressed: () =>
+              Navigator.of(context).pushNamed(AppRoutes.tareasRemotas),
+        ),
+      ],
       floatingActionButton: FloatingActionButton.extended(
         backgroundColor: AppColors.primaryDark,
         foregroundColor: AppColors.white,

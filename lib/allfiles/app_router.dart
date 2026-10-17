@@ -4,8 +4,10 @@ import '../../features/taskflow/domain/task.dart';
 import '../../features/taskflow/presentacion/pages/detalle_tarea_page.dart';
 import '../../features/taskflow/presentacion/pages/error_page.dart';
 import '../../features/taskflow/presentacion/pages/habitos_page.dart';
+import '../../features/taskflow/presentacion/pages/laboratorio_async_page.dart';
 import '../../features/taskflow/presentacion/pages/nueva_tarea_page.dart';
 import '../../features/taskflow/presentacion/pages/perfil_page.dart';
+import '../../features/taskflow/presentacion/pages/tareas_remotas_page.dart';
 import '../../features/taskflow/presentacion/pages/taskflow_page.dart';
 import 'app_routes.dart';
 
@@ -18,6 +20,8 @@ class AppRouter {
     AppRoutes.home: (_) => const TaskflowPage(),
     AppRoutes.habitos: (_) => const HabitosPage(),
     AppRoutes.perfil: (_) => const PerfilPage(),
+    AppRoutes.tareasRemotas: (_) => const TareasRemotasPage(),
+    AppRoutes.laboratorio: (_) => const LaboratorioAsyncPage(),
   };
 
   /// Rutas dinámicas: /tarea recibe el id; /tarea/nueva un Task? opcional.

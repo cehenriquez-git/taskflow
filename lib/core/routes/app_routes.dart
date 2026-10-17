@@ -3,17 +3,24 @@ import 'package:flutter/material.dart';
 /// Nombres de las rutas de TaskFlow (un solo lugar, sin "strings sueltos").
 ///
 /// Mapa de pantallas:
-///   /              -> Listado de tareas (pantalla inicial)
+///   /login          -> Login (pantalla inicial, Semana 15)
+///   /registro       -> Registro. Devuelve con Navigator.pop el correo
+///                      registrado (String), o null si el usuario vuelve atrás.
+///   /publicaciones  -> Listado de posts (API REST con paginación)
+///   /              -> Listado de tareas (TaskFlow)
 ///   /tarea         -> Detalle de tarea (recibe un id como argumento)
-///   /tarea/nueva   -> Formulario de tarea (sin argumentos = crear;
-///                     con una Task como argumento = editar). Devuelve la
-///                     Task validada con Navigator.pop, o null si se cancela.
+///   /tarea/nueva   -> Formulario de tarea (crear / editar)
 ///   /habitos       -> Hábitos (rama independiente)
 ///   /perfil        -> Perfil (rama independiente)
 ///   /nube          -> Tareas en la nube (API REST, Semana 14)
 ///   /laboratorio   -> Laboratorio de asincronía (Semana 14)
 class AppRoutes {
   AppRoutes._();
+
+  // CAMBIO (Semana 15): autenticación y publicaciones.
+  static const login = '/login';
+  static const registro = '/registro';
+  static const publicaciones = '/publicaciones';
 
   static const home = '/';
   static const habitos = '/habitos';
